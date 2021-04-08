@@ -1,0 +1,90 @@
+必须window10纯净专业版64位
+
+一、搭环境
+1.下载VS2017，切记，不要下2019其他的
+2.下载anacoada3 5.0.1，不能其他版本
+3.下载python3.5.2，不能其他版本
+4.下载cuda9.0.176  cudnn7.0.5，不能其他版本，先安装cuda
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+1.安装CUDA后把C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\extras\CUPTI\libx64\cupti64_80.dll 
+拷贝到C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\bin 查看图1-2中的变量是否已经自动添加，然后输入检测命令cd到安装目录下的 ...\extras\demo_suite,然后分别执行bandwidthTest.exe和deviceQuery.exe
+
+2.VS2017选择C++开发，windows开发，net桌面开发，python就行了，单个组件只要SDK全部选上就行，直接点安装
+
+3..安装python3.5.2时,选择customize installation 勾选addpython 3.5.2 to path 勾选2015 安装
+
+4.安装anacoadn3时， 选just me 勾选add anaconda to my path安装
+
+5.打开anacoada import窗口:
+                         conda --version  显示conda 4.3.30
+                         conda info --envs 显示toot  c:\anaconda3
+                         conda search --full-name python 查看版本
+                         conda create --name tensorflow python=3.5.2
+                         activate tensorflow
+                         conda info --envs  显示tensorflow envs
+                         python --version   显示python3.5.2
+                         deactivate
+
+6.用anacoada安装tensorflow1.15.2
+                         activate tensorflow
+                         pip install tensorflow-gpu==1.15.2
+
+7.确认tensorflow安装成功： 
+                       cmd里面键入python，然后键入import tensorflow as tf  
+                       再输入sess = tf.Session(config=tf.ConfigProto(log_device_placement=True)) 
+注意：如安装中系统提示 You should consider upgrading via the 'python -m pip install --upgrade pip' comm 是需要升级pip
+输入
+    python -m pip install --upgrade pip
+输入 pip show pip
+
+
+如果好了，你离炼丹成功近了一步！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+继续往下看
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+接下来，就是炼丹了
+
+训练权重：
+        
+1.打包棋谱文件：
+              将所有要用于训练的棋谱统一成sgf格式放进一个文件夹里，开启                 dos窗口进入放置棋谱的文件夹 Windows系统输入 :  copy *.sgf                train.sgf
+
+2.生成训练数据：
+              打包好的棋谱文件xxx.sgf，里拉引擎leelaz.exe和一个空权重                  文件放进一个文件夹里，dos窗口打开该文件夹输入leelaz -g -w                权重名.txt回车
+
+              输入dump_supervised train.sgf train.out 等待生成结束
+              输入exit  生成数据完成后退出
+
+3.调整训练参数：
+              用idle pythong打开training\tf\tfprocess调整                            111>self.RESIDUAL_FILTERS = 128
+              112>self.RESIDUAL_BLOCKS = 6  调整训练权重的网络规模
+              177>learning_rate=0.05, momentum=0.9, use_nesterov=True)
+              调整学习率，动量
+              打开training\tf\parse  调整BATCH_SIZE = 512 显存使用率
+
+4.训练权重：
+              完成上述步骤后如果直接训练就不需要生成空权重，扩网等操作
+              讲训练数据和training\tf内的训练程序放在一起在training\tf里，或者其它文件夹里，在dos或anacoadn import窗口里打开该文件夹
+              激活tensorflow环境后输入python parse.py 文件前半部分相同的名字
+              等待程序启动，启动成功将开始迭代，8次迭代后生成第一个权重文件此后每8次迭代产生一个权重。
+
+5.生成初始空权重扩网：
+                     dos窗口打开training\tf\
+                     输入python3 net_to_model.py 20_192.txt
+                     生成一个初始空权重20B-192F
+                     dos窗口打开training\tf\
+                     输入python net2net.py 10 64 权重名.txt
+                     将现有权重扩大
+
+6.恢复训练：          
+                     从某个断点的批次开始训练
+                     dos窗口打开training/tf/
+                     输入python parse.py train.out 完整路径 leelaz-model-xxxxxx
+
+根据袁泉和GCP官网说明整理
+
+本文作者：明天的阳光，版权所有，请问侵权
