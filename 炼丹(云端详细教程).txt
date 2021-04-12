@@ -1,0 +1,68 @@
+本文是极链云，MistGPU，colab等云端炼丹教程：
+所有下载的东西都可以直接wget到云端。不支持TensorFlow框架的一律不行。
+
+一.云端环境
+环境选择1.14.0到1.15.5之间的TensorFlow框架，
+
+MistGPU比较特别，先选择机器，然后单击选择预装软件框架，选择：TensorFlow 1.15.2 + PyTorch 1.8.0 + Conda + opencv 4 + Cuda10.0/cudnn7
+
+接下来，就是炼丹了！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+一.生成数据训练：
+1.准备和合成你的棋谱
+棋谱有很多来源，我找到的一些棋谱来源：
+computer-go-dataset: https://github.com/yenw/computer-go-dataset
+LeelaZero: https://sjeng.org/zero/
+Aya-Self play: http://www.yss-aya.com/ayaself/ayaself.html
+CGOS: http://www.yss-aya.com/cgos/19x19/archive.html
+KGS: https://u-go.net/gamerecords/
+新浪: http://duiyi.sina.com.cn/gibo/new_gibo.asp
+Gokifu: http://gokifu.com/
+野狐: http://www.foxwq.com/qipu
+Github：https://github.com/katajigo/Alchemy/releases
+
+以上的棋谱，有很多种格式，最后我们都要整理成sgf格式，然后将所有的sgf棋谱文件打包到一个大的sgf文件中(简单的文件合并就可以了)，命令行如下：
+先把棋谱放在一个文件夹内，然后输入(如果是在终端，不需要输入第一个符号)：
+!cat *.sgf train.sgf
+生成的train.sgf建议包含15万张围棋棋谱，20万张更好。建议用25W张棋谱进行第一轮训练，然后用30W张高段棋谱进行第二轮训练，这样生成的会权重更加稳定。
+
+2.生成训练数据：
+先创建一个文件夹(名字英文，中文不一定识别出来)，里面放一个15B权重，一个Linux系统的LeelaZero引擎和你合成的sgf棋谱
+我的文件：https://github.com/katajigo/Alchemy/releases/download/v1.0.0/LeelaZero.zip，可以把我的train.sgf替换成你的train.sgf
+然后运行以下代码，运行完点一下一闪一闪的框输入：dump_supervised train.sgf train.out
+如果是在终端，不需要输入第一个符号，运行完输入dump_supervised train.sgf train.out
+%cd /文件夹
+!chmod 777 ./leelaz
+!./leelaz -g -w 文件名.后缀
+
+也可以直接用LeelaZero官网的训练数据，官网有对应的名称(不建议，不如直接用官网的权重)
+下载网址:https://leela.online-go.com/training/
+
+二.准备训练权重的文件
+1.上传tf文件夹
+下载网址:https://github.com/katajigo/Alchemy/releases/download/v1.1.0/tf.zip
+
+2.打开tfprocess.py文件调整训练的权重结构和学习率(可以不修改，如果云端不支持修改，那先用本机记事本打开修改，然后上传单个文件)
+116>self.RESIDUAL_FILTERS = 128   调整权重filters数
+117>self.RESIDUAL_BLOCKS = 10   调整权重block数
+建议：5b64f     6b128f     10b128f     15b192f     20b256f     40b256f
+
+191>learning_rate=0.01, momentum=0.9, use_nesterov=True)   调整学习率(第一个，建议第一批1，第二批0.9，第三批0.8，然后依次往下降)
+
+3.打开parse.py文件调整显存使用率(可以不修改)
+38>BATCH_SIZE = 512
+
+四.开始训练权重
+1.从第一个权重进行训练(如果是在终端，不需要输入第一个符号)
+!cd tf
+!python parse.py train
+
+2.从某个断点的权重开始训练(如果是在终端，不需要输入第一个符号)
+!cd tf
+!python parse.py train 权重名字(不需要后缀)
+
+如果成功，你将会看到每隔8k步迭代后，会生成一个权重，恭喜你！你自己的第一个权重训练出来了！可以到128k迭代下载，也可以到56k迭代下载。
+
+我炼出的私丹会分享在Github：https://github.com/katajigo/Alchemy/
+
+本文作者：katajigo，版权所有，请勿侵权
